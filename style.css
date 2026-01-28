@@ -143,3 +143,46 @@ body::after {
     transparent 4px
   );
 }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Title input */
+#title {
+  flex: 1;
+  background: #050509;
+  border: 2px solid var(--neon-purple);
+  color: var(--text-light);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+/* Visibility toggle */
+.visibility-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 2px solid var(--neon-cyan);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+  transition: 0.25s;
+}
+
+.visibility-toggle.unlisted {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.visibility-toggle:hover {
+  transform: scale(1.05);
+}
