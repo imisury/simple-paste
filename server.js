@@ -69,4 +69,26 @@ serve({
 
 console.log('Server running on Node.js');
 
+// Example for Express + SQLite/Postgres
+app.post("/paste", async (req, res) => {
+  const { title, content, visibility } = req.body;
+  // Save title + content + visibility in DB
+  await db.query("INSERT INTO pastes (title, content, visibility) VALUES ($1, $2, $3)", [title, content, visibility]);
+  res.json({ success: true, id: newPasteId });
+});
+
+app.get("/paste/:id", async (req, res) => {
+  const paste = await db.query("SELECT * FROM pastes WHERE id = $1", [req.params.id]);
+  res.json(paste.rows[0]); // include title in response
+});
+
+
+// Example query for recent pastes
+const recentPublicPastes = await db.query("SELECT * FROM pastes WHERE visibility='public' ORDER BY created_at DESC LIMIT 10");
+
+app.get("/recent", async (req, res) => {
+  const recent = await db.query("SELECT id, title, created_at FROM pastes WHERE visibility='public' ORDER BY created_at DESC LIMIT 10");
+  res.json(recent.rows);
+});
+
 
