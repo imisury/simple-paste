@@ -68,3 +68,25 @@ serve({
 });
 
 console.log('Server running on Node.js');
+
+<script>
+const toggle = document.getElementById("visibilityToggle");
+
+toggle.addEventListener("click", () => {
+  const label = toggle.querySelector(".label");
+  const eye = toggle.querySelector(".eye");
+
+  if (toggle.dataset.value === "public") {
+    toggle.dataset.value = "unlisted";
+    label.textContent = "Unlisted";
+    eye.textContent = "🙈";
+    toggle.classList.add("unlisted");
+  } else {
+    toggle.dataset.value = "public";
+    label.textContent = "Public";
+    eye.textContent = "👁️";
+    toggle.classList.remove("unlisted");
+  }
+});
+</script>
+
