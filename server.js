@@ -21,12 +21,11 @@ try {
 
 // Load pastes from file
 let pastes = {};
-if (fsSync.existsSync(DATA_FILE)) {
-  try {
-    pastes = JSON.parse(fsSync.readFileSync(DATA_FILE, "utf8"));
-  } catch {
-    pastes = {};
-  }
+try {
+  const data = await fs.readFile(DATA_FILE, 'utf8');
+  pastes = JSON.parse(data);
+} catch (err) {
+  pastes = {}; // file doesn't exist or invalid JSON
 }
 
 // Save helper
@@ -83,5 +82,5 @@ app.get("/api/recent", (c) => {
   return c.json(recent);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+serve(app, { port: process.env.PORT || 3000 });
+
