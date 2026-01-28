@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'url';|
+import { createServer } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,8 +74,9 @@ app.get("/api/recent", (c) => {
 });
 
 // --- Serve using native Node HTTP ---
-import { createServer } from 'http';
 const PORT = process.env.PORT || 8080;
 createServer(app.fetch).listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
   console.log(`Server running on port ${PORT}`);
 });
