@@ -21,6 +21,15 @@ try {
 // Serve the frontend HTML
 app.get('/', (c) => c.html(htmlContent));
 
+// Serve CSS FIRST (important!)
+app.get('/style.css', async (c) => {
+  const css = await fs.readFile('./style.css', 'utf8');
+  return c.text(css, 200, {
+    'Content-Type': 'text/css',
+  });
+});
+
+// THEN catch dynamic paste keys
 app.get('/:key', (c) => {
   const key = c.req.param('key');
   if (pastes.has(key)) {
