@@ -1,54 +1,33 @@
-const { Hono } = require('hono');
-const { serve } = require('@hono/node-server');
-const { nanoid } = require('nanoid');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const app = new Hono();
-const PASTES = new Map();
+console.log('Starting server... Current dir:', __dirname);
+console.log('Files in dir:', fs.readdirSync('.'));
 
-console.log('Current directory files:', fs.readdirSync('.'));  // ← this logs your files!
-
-let htmlContent;
+let html;
 try {
   const htmlPath = path.join(__dirname, 'index.html');
-  htmlContent = fs.readFileSync(htmlPath, 'utf8');
-  console.log('index.html loaded successfully from:', htmlPath);
+  html = fs.readFileSync(htmlPath, 'utf8');
+  console.log('Loaded index.html successfully (length:', html.length, 'chars)');
 } catch (err) {
-  console.error('Failed to load index.html:', err.message);
-  htmlContent = '<h1>Error: index.html missing on server</h1>';
+  console.error('ERROR loading index.html:', err.message);
+  html = '<h1>Error: index.html not found on server</h1><p>Check Railway logs for details.</p>';
 }
 
-app.get('/', (c) => c.html(htmlContent));
+const server = http.createServer((req, res) => {
+  console.log('Request received:', req.method, req.url);
 
-app.get('/:key', (c) => {
-  const key = c.req.param('key');
-  if (PASTES.has(key)) {
-    return c.html(htmlContent);
+  if (req.url === '/' || req.url.startsWith('/api/') === false) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(html);
+  } else {
+    res.writeHead(404);
+    res.end('Not found');
   }
-  return c.redirect('/');
 });
-
-app.post('/api/save', async (c) => {
-  const text = await c.req.text();
-  if (!text.trim()) return c.text('Empty', 400);
-  const key = nanoid(10);
-  PASTES.set(key, text);
-  console.log('Paste created:', key);
-  return c.text(key);
-});
-
-app.get('/api/get/:key', (c) => {
-  const content = PASTES.get(c.req.param('key'));
-  return content ? c.text(content) : c.notFound();
-});
-
-app.get('/debug', (c) => c.text('Server is alive! Files in dir: ' + fs.readdirSync('.').join(', ')));
 
 const port = process.env.PORT || 3000;
-serve({
-  fetch: app.fetch,
-  port,
-}, () => {
-  console.log(`Server listening on port ${port}`);
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Server running on port ${port} (using env PORT if set)`);
 });
