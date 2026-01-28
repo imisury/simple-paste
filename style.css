@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap');
 
+body {
+  background: red !important;
+}
+
 :root {
   --bg-main: #0a0a0f;
   --bg-panel: #111118;
