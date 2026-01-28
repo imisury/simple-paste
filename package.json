@@ -1,14 +1,17 @@
 {
-  "name": "simple-paste",
+  "name": "imisury-paste",
+  "version": "1.0.0",
+  "description": "Simple pastebin using Hono and Node.js",
   "type": "module",
-  "dependencies": {
-    "hono": "^4.6.5",
-    "nanoid": "^5.0.7"
-  },
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "hono": "^3.3.0",
+    "nanoid": "^4.0.0"
   }
 }
