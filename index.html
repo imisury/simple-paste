@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simple Paste</title>
+  <style>
+    body { font-family: monospace; background:#111; color:#eee; padding:20px; max-width:900px; margin:auto; }
+    textarea { width:100%; height:300px; background:#222; color:#0f0; border:1px solid #444; padding:12px; font-size:1.1rem; }
+    button { padding:12px 24px; background:#444; color:#fff; border:none; cursor:pointer; margin:10px 0; }
+    button:hover { background:#666; }
+    #result { margin-top:20px; color:#0f0; word-break:break-all; }
+    pre { background:#000; padding:16px; overflow:auto; border:1px solid #333; display:none; }
+  </style>
+</head>
+<body>
+  <h1>Simple Paste</h1>
+  <textarea id="content" placeholder="Paste your text here..."></textarea>
+  <br>
+  <button onclick="createPaste()">Create Paste</button>
+  <div id="result"></div>
+  <pre id="view"><code></code></pre>
+
+  <script>
+    const API = window.location.origin + '/api';
+
+    async function createPaste() {
+      const text = document.getElementById('content').value.trim();
+      if (!text) return alert('Nothing to paste');
+
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: text
+      });
+
+      if (!res.ok) return alert('Error: ' + await res.text());
+
+      const key = await res.text();
+      const url = `${window.location.origin}/${key}`;
+      document.getElementById('result').innerHTML = `Paste created! Link: <a href="${url}" style="color:#0f0;">${url}</a>`;
+    }
+
+    // If URL has a key, show the paste
+    (async () => {
+      const key = location.pathname.slice(1);
+      if (!key) return;
+
+      document.querySelector('textarea, button').style.display = 'none';
+      const res = await fetch(`${API}/${key}`);
+      if (!res.ok) return document.body.innerHTML += '<h2 style="color:red">Paste not found</h2>';
+
+      const text = await res.text();
+      const code = document.querySelector('#view code');
+      code.textContent = text;
+      document.getElementById('view').style.display = 'block';
+    })();
+  </script>
+</body>
+</html>
