@@ -1,33 +1,24 @@
 const http = require('http');
 const fs = require('fs');
-const path = require('path');
 
-console.log('App starting...');
-console.log('Current directory:', __dirname);
-console.log('Files in current directory:', fs.readdirSync('.'));
+console.log('1. App code starting execution...');
+console.log('2. Environment PORT:', process.env.PORT || '(not set - will use 3000)');
 
-let htmlContent = '<h1>Error: index.html not found</h1><p>Check Railway logs for file list.</p>';
+let html = '<h1>TEST: index.html not loaded</h1><p>If you see this, server works but file missing.</p>';
 try {
-  const htmlPath = path.join(__dirname, 'index.html');
-  htmlContent = fs.readFileSync(htmlPath, 'utf8');
-  console.log('Successfully loaded index.html (size:', htmlContent.length, 'bytes)');
-} catch (err) {
-  console.error('Failed to load index.html:', err.message);
+  html = fs.readFileSync('./index.html', 'utf8');
+  console.log('3. Successfully read index.html (length:', html.length, 'bytes)');
+} catch (e) {
+  console.log('3. ERROR reading index.html:', e.message);
 }
 
 const server = http.createServer((req, res) => {
-  console.log('Incoming request:', req.method, req.url);
-
-  if (req.url === '/' || req.url.startsWith('/')) {  // serve HTML for root and paste keys
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(htmlContent);
-  } else {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
-  }
+  console.log('4. Request received:', req.method, req.url);
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(html);
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`App listening on http://0.0.0.0:${PORT} (using env PORT)`);
+const port = process.env.PORT || 3000;
+server.listen(port, '0.0.0.0', () => {
+  console.log(`5. Server successfully listening on port ${port}`);
 });
