@@ -1,63 +1,61 @@
-<script>
-  const status = document.getElementById('status');
-  const burnBtn = document.getElementById('burnBtn');
-  const host = window.location.host;
-  const API_SAVE = `https://${host}/api/save`;
-  const API_GET = `https://${host}/api/get/`;
+const { Hono } = require('hono');
+const { serve } = require('@hono/node-server');
+const { nanoid } = require('nanoid');
+const fs = require('fs');
+const path = require('path');
 
-  burnBtn.onclick = async () => {
-    const text = document.getElementById('paste').value.trim();
-    if (!text) {
-      status.textContent = '→ Nothing to burn...';
-      return;
+const app = new Hono();
+const PASTES = new Map();
+
+// Serve index.html on root and paste URLs
+const serveHtml = (c) => {
+  try {
+    const htmlPath = path.join(__dirname, 'index.html');
+    console.log('Trying to serve:', htmlPath);
+    if (!fs.existsSync(htmlPath)) {
+      console.error('index.html NOT FOUND at:', htmlPath);
+      return c.text('index.html missing on server', 500);
     }
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    return c.html(html);
+  } catch (err) {
+    console.error('Error serving HTML:', err.message);
+    return c.text('Server error serving page', 500);
+  }
+};
 
-    status.textContent = 'Burning...';
-    burnBtn.disabled = true;
+app.get('/', serveHtml);
 
-    try {
-      const res = await fetch(API_SAVE, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain'},
-        body: text
-      });
+app.get('/:key', (c) => {
+  const key = c.req.param('key');
+  if (PASTES.has(key) || key === 'api' || key === 'save' || key === 'get') {
+    return c.redirect('/'); // avoid conflict with api routes
+  }
+  return serveHtml(c);
+});
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Server said: ${res.status} ${errorText}`);
-      }
+// API routes
+app.post('/api/save', async (c) => {
+  const text = await c.req.text();
+  if (!text.trim()) return c.text('Empty', 400);
+  const key = nanoid(10);
+  PASTES.set(key, text);
+  console.log('Paste created:', key);
+  return c.text(key);
+});
 
-      const key = await res.text();
-      const link = `https://${host}/${key}`;
+app.get('/api/get/:key', (c) => {
+  const content = PASTES.get(c.req.param('key'));
+  return content ? c.text(content) : c.notFound();
+});
 
-      document.getElementById('url-box').value = link;
-      document.getElementById('url-box').style.display = 'inline-block';
-      status.textContent = 'Success! Your paste is live. → ' + link;
-    } catch (e) {
-      status.innerHTML = `Error: ${e.message}<br>Check F12 Console or Railway logs.`;
-      console.error(e);
-    } finally {
-      burnBtn.disabled = false;
-    }
-  };
+// Debug route to test if server is alive
+app.get('/debug', (c) => c.text('Server is alive! Current time: ' + new Date().toISOString()));
 
-  // Load paste if key in URL
-  (async () => {
-    const key = location.pathname.slice(1);
-    if (!key) return;
-
-    document.getElementById('editor').style.display = 'none';
-    document.getElementById('view').style.display = 'block';
-
-    try {
-      const res = await fetch(API_GET + key);
-      if (!res.ok) throw new Error();
-      const text = await res.text();
-      const code = document.querySelector('#view code');
-      code.textContent = text;
-      hljs.highlightElement(code);
-    } catch {
-      document.body.innerHTML += '<h2 style="color:red;text-align:center;">Paste expired or not found</h2>';
-    }
-  })();
-</script>
+const port = process.env.PORT || 3000;
+serve({
+  fetch: app.fetch,
+  port,
+}, () => {
+  console.log(`NEONSHARD running on port ${port}`);
+});
