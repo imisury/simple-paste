@@ -3,7 +3,6 @@ import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import fsSync from 'fs'; // only for existsSync
 import path from 'path';
-import { serve } from '@hono/node-server';
 
 const app = new Hono();
 const DATA_FILE = path.join(process.cwd(), 'pastes.json');
@@ -88,6 +87,14 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-serve(app, { port: 3000 }); // optional: specify port
-console.log('Server running on http://localhost:3000');
+import { serve } from '@hono/node-server';
+
+// start the Node.js server
+serve(app, {
+  port: 3000,
+  listeningListener: (info) => {
+    console.log(`Server running on http://localhost:${info.port}`);
+  },
+});
+
 
