@@ -1,12 +1,17 @@
 {
   "name": "neon-paste",
+  "version": "1.0.0",
+  "main": "server.js",
   "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "hono": "^4.0.0",
     "@hono/node-server": "^1.12.0",
     "nanoid": "^5.0.0"
   },
-  "scripts": {
-    "start": "node server.js"
+  "engines": {
+    "node": ">=18"
   }
 }
