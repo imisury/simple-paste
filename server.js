@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import fsSync from 'fs'; // only for existsSync
 import path from 'path';
+import { serve } from '@hono/node-server';
 
 const app = new Hono();
 const DATA_FILE = path.join(process.cwd(), 'pastes.json');
@@ -86,8 +87,6 @@ app.get('/api/recent', (c) => {
 
   return c.json(recent);
 });
-
-import { serve } from '@hono/node-server';
 
 serve(app);
 
