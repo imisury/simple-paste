@@ -3,7 +3,6 @@
   "type": "module",
   "dependencies": {
     "hono": "^4.6.5",
-    "@hono/node-server": "3.3.2",
     "nanoid": "^5.0.7"
   },
   "scripts": {
