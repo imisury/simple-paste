@@ -1,63 +1,56 @@
-import { Hono } from 'hono';
-import { nanoid } from 'nanoid';
-import { serve } from '@hono/node-server'; // <-- THIS IS REQUIRED
-import fs from 'fs/promises';
-import fsSync from 'fs'; // only for existsSync
-import path from 'path';
+import { Hono } from "hono";
+import { createServer } from "http";
+import { nanoid } from "nanoid";
+import fs from "fs/promises";
+import fsSync from "fs";
+import path from "path";
 
 const app = new Hono();
-const DATA_FILE = path.join(process.cwd(), 'pastes.json');
+const DATA_FILE = path.join(process.cwd(), "pastes.json");
 
-// ✅ Single declaration for pastes
+// Load pastes from file
 let pastes = {};
-
-// Load pastes from file at startup
 if (fsSync.existsSync(DATA_FILE)) {
   try {
-    const fileData = await fs.readFile(DATA_FILE, 'utf8');
-    pastes = JSON.parse(fileData);
-    console.log('Loaded pastes from file');
-  } catch (err) {
-    console.error('Failed to load pastes.json, starting empty', err);
+    pastes = JSON.parse(fsSync.readFileSync(DATA_FILE, "utf8"));
+  } catch {
     pastes = {};
   }
 }
 
-// Save pastes helper
+// Save helper
 const savePastes = async () => {
   await fs.writeFile(DATA_FILE, JSON.stringify(pastes, null, 2));
 };
 
-// Load index.html once at startup
+// Load HTML once
 let htmlContent;
 try {
-  htmlContent = await fs.readFile('./index.html', 'utf8');
-  console.log('index.html loaded successfully');
-} catch (err) {
-  console.error('Failed to load index.html:', err);
-  htmlContent = '<h1>Error: Could not load page</h1>';
+  htmlContent = await fs.readFile("./index.html", "utf8");
+} catch {
+  htmlContent = "<h1>Error: Could not load page</h1>";
 }
 
-// Serve frontend
-app.get('/', (c) => c.html(htmlContent));
-
-// Serve CSS
-app.get('/style.css', async (c) => {
-  const css = await fs.readFile('./style.css', 'utf8');
-  return c.text(css, 200, { 'Content-Type': 'text/css' });
+// Routes
+app.get("/", (c) => c.html(htmlContent));
+app.get("/style.css", async (c) => {
+  const css = await fs.readFile("./style.css", "utf8");
+  return c.text(css, 200, { "Content-Type": "text/css" });
 });
 
-// Serve dynamic paste pages
-app.get('/:key', (c) => {
-  const key = c.req.param('key');
+// Serve UI for specific paste
+app.get("/:key", (c) => {
+  const { key } = c.req.param();
   if (pastes[key]) return c.html(htmlContent);
-  return c.redirect('/');
+  return c.redirect("/");
 });
 
-// Create new paste
-app.post('/api', async (c) => {
-  const body = await c.req.json();
-  const { title = '', content = '', visibility = 'public' } = body;
+// Create paste (JSON expected)
+app.post("/api", async (c) => {
+  const { title = "", content = "", visibility = "public" } =
+    await c.req.json();
+
+  if (!content.trim()) return c.json({ error: "Empty paste" }, 400);
 
   const key = nanoid(8);
   const createdAt = Date.now();
@@ -68,19 +61,18 @@ app.post('/api', async (c) => {
   return c.json({ success: true, key });
 });
 
-// Get a paste by key
-app.get('/api/:key', (c) => {
-  const key = c.req.param('key');
+// Get paste details
+app.get("/api/:key", (c) => {
+  const { key } = c.req.param();
   const paste = pastes[key];
-
-  if (!paste) return c.json({ error: 'Paste not found' }, 404);
+  if (!paste) return c.json({ error: "Paste not found" }, 404);
   return c.json(paste);
 });
 
-// Get recent public pastes
-app.get('/api/recent', (c) => {
+// Recent public pastes
+app.get("/api/recent", (c) => {
   const recent = Object.entries(pastes)
-    .filter(([_, p]) => p.visibility === 'public')
+    .filter(([, p]) => p.visibility === "public")
     .sort((a, b) => b[1].createdAt - a[1].createdAt)
     .slice(0, 10)
     .map(([key, p]) => ({ key, title: p.title, createdAt: p.createdAt }));
@@ -88,10 +80,7 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-serve(app, {
-  port: 3000,
-  listeningListener: (info) => {
-    console.log(`Server running on http://localhost:${info.port}`);
-  },
+// Start server
+createServer(app.fetch).listen(process.env.PORT || 3000, () => {
+  console.log(`Server running on http://localhost:${process.env.PORT || 3000}`);
 });
-
