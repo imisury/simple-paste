@@ -34,14 +34,6 @@ const savePastes = async () => {
   await fs.writeFile(DATA_FILE, JSON.stringify(pastes, null, 2));
 };
 
-// Load HTML once
-let htmlContent;
-try {
-  htmlContent = await fs.readFile("./index.html", "utf8");
-} catch {
-  htmlContent = "<h1>Error: Could not load page</h1>";
-}
-
 // Routes
 app.get("/", (c) => c.html(htmlContent));
 app.get("/style.css", async (c) => {
