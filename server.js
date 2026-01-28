@@ -1,12 +1,23 @@
-import { Hono } from "hono";
-import { createServer } from "http";
-import { nanoid } from "nanoid";
-import fs from "fs/promises";
-import fsSync from "fs";
-import path from "path";
+import { Hono } from 'hono';
+import { serve } from '@hono/node-server';
+import { nanoid } from 'nanoid';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const app = new Hono();
 const DATA_FILE = path.join(process.cwd(), "pastes.json");
+
+let htmlContent;
+try {
+  htmlContent = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  console.log('index.html loaded successfully');
+} catch (err) {
+  console.error('Failed to load index.html:', err);
+  htmlContent = '<h1>Error: Could not load page</h1>';
+}
 
 // Load pastes from file
 let pastes = {};
