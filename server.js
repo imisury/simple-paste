@@ -10,6 +10,18 @@ const __dirname = path.dirname(__filename);
 const app = new Hono();
 const DATA_FILE = path.join(process.cwd(), "pastes.json");
 
+// Serve index.html
+app.get("/", async (c) => {
+  const html = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  return c.html(html);
+});
+
+// Serve style.css
+app.get("/style.css", async (c) => {
+  const css = await fs.readFile(path.join(__dirname, 'style.css'), 'utf8');
+  return c.text(css, 200, { "Content-Type": "text/css" });
+});
+
 // Load index.html
 let htmlContent;
 try {
