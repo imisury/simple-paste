@@ -2,13 +2,10 @@ import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises'; // Node's promise-based fs
-import { serveStatic } from "hono/node-server/serve-static";
 
 
 const app = new Hono();
 const pastes = new Map();
-
-app.use("/*", serveStatic({ root: "./" }));
 
 
 // Load index.html once at startup (async top-level is ok in ESM with Node 14+)
@@ -27,9 +24,17 @@ app.get('/', (c) => c.html(htmlContent));
 app.get('/:key', (c) => {
   const key = c.req.param('key');
   if (pastes.has(key)) {
-    return c.html(htmlContent); // frontend JS will fetch content
+    return c.html(htmlContent);
   }
   return c.redirect('/');
+});
+
+// Serve CSS file
+app.get('/style.css', async (c) => {
+  const css = await fs.readFile('./style.css', 'utf8');
+  return c.text(css, 200, {
+    'Content-Type': 'text/css',
+  });
 });
 
 // Create paste
