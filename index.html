@@ -7,92 +7,121 @@
   <title>Imisury Paste</title>
   <style>
     body { font-family: monospace; background:#111; color:#eee; padding:20px; max-width:900px; margin:auto; }
-    textarea { width:100%; height:300px; background:#222; color:#0f0; border:1px solid #444; padding:12px; font-size:1.1rem; }
+    textarea, input[type="text"] { width:100%; background:#222; color:#0f0; border:1px solid #444; padding:12px; font-size:1.1rem; margin-bottom:10px; }
     button { padding:12px 24px; background:#444; color:#fff; border:none; cursor:pointer; margin:10px 0; }
     button:hover { background:#666; }
     #result { margin-top:20px; color:#0f0; word-break:break-all; }
     pre { background:#000; padding:16px; overflow:auto; border:1px solid #333; display:none; }
+    .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+    .visibility-toggle { cursor:pointer; user-select:none; display:flex; align-items:center; gap:5px; }
+    ul#recentPastes { list-style:none; padding-left:0; }
+    ul#recentPastes li { padding:6px 0; border-bottom:1px solid #333; }
   </style>
 </head>
 <body>
 
-<div class="toolbar">
-  <input type="text" id="title" placeholder="Paste title (optional)" />
+<div class="container">
+  <h1>Imisury Paste</h1>
 
-  <div class="visibility-toggle" id="visibilityToggle" data-value="public">
-    <span class="eye">👁️</span>
-    <span class="label">Public</span>
+  <div class="toolbar">
+    <input type="text" id="title" placeholder="Paste title (optional)" />
+
+    <div class="visibility-toggle" id="visibilityToggle" data-value="public">
+      <span class="eye">👁️</span>
+      <span class="label">Public</span>
+    </div>
   </div>
+
+  <textarea id="content" placeholder="Paste your text here..."></textarea>
+  <button id="submitPaste">Create Paste</button>
+
+  <div id="result"></div>
+
+  <pre id="view"><code></code></pre>
+
+  <h2>Recent Public Pastes</h2>
+  <ul id="recentPastes"></ul>
 </div>
-  
-  <div class="container">
-    <h1>Imisury Paste</h1>
 
-    <textarea id="content" placeholder="Paste your text here..."></textarea>
-    <br>
+<script>
+  const API = window.location.origin + '/api';
 
-    <button onclick="createPaste()">Create Paste</button>
+  const toggle = document.getElementById("visibilityToggle");
+  toggle.addEventListener("click", () => {
+    const label = toggle.querySelector(".label");
+    const eye = toggle.querySelector(".eye");
 
-    <div id="result"></div>
-
-    <pre id="view"><code></code></pre>
-  </div>
-
-  <script>
-    const API = window.location.origin + '/api';
-
-    async function createPaste() {
-      const text = document.getElementById('content').value.trim();
-      if (!text) return alert('Nothing to paste');
-
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: text
-      });
-
-      if (!res.ok) return alert('Error: ' + await res.text());
-
-      const key = await res.text();
-      const url = `${window.location.origin}/${key}`;
-      document.getElementById('result').innerHTML = `Paste created! Link: <a href="${url}" style="color:#0f0;">${url}</a>`;
+    if (toggle.dataset.value === "public") {
+      toggle.dataset.value = "unlisted";
+      label.textContent = "Unlisted";
+      eye.textContent = "🙈";
+      toggle.classList.add("unlisted");
+    } else {
+      toggle.dataset.value = "public";
+      label.textContent = "Public";
+      eye.textContent = "👁️";
+      toggle.classList.remove("unlisted");
     }
+  });
 
-    // If URL has a key, show the paste
-    (async () => {
-      const key = location.pathname.slice(1);
-      if (!key) return;
+  document.getElementById('submitPaste').addEventListener('click', async () => {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const visibility = toggle.dataset.value;
 
-      document.querySelector('textarea, button').style.display = 'none';
-      const res = await fetch(`${API}/${key}`);
-      if (!res.ok) return document.body.innerHTML += '<h2 style="color:red">Paste not found</h2>';
+    if (!content) return alert('Nothing to paste');
 
-      const text = await res.text();
-      const code = document.querySelector('#view code');
-      code.textContent = text;
-      document.getElementById('view').style.display = 'block';
-    })();
-const toggle = document.getElementById("visibilityToggle");
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, content, visibility })
+    });
 
-toggle.addEventListener("click", () => {
-  const label = toggle.querySelector(".label");
-  const eye = toggle.querySelector(".eye");
+    const data = await res.json();
+    if (!data.success) return alert('Error creating paste');
 
-  if (toggle.dataset.value === "public") {
-    toggle.dataset.value = "unlisted";
-    label.textContent = "Unlisted";
-    eye.textContent = "🙈";
-    toggle.classList.add("unlisted");
-  } else {
-    toggle.dataset.value = "public";
-    label.textContent = "Public";
-    eye.textContent = "👁️";
-    toggle.classList.remove("unlisted");
+    const url = `${window.location.origin}/${data.key}`;
+    document.getElementById('result').innerHTML = `Paste created! Link: <a href="${url}" style="color:#0f0;">${url}</a>`;
+    document.getElementById('content').value = '';
+    document.getElementById('title').value = '';
+    toggle.dataset.value = 'public';
+    toggle.querySelector('.label').textContent = 'Public';
+    toggle.querySelector('.eye').textContent = '👁️';
+    toggle.classList.remove('unlisted');
+
+    loadRecent();
+  });
+
+  async function loadRecent() {
+    const res = await fetch(`${API}/recent`);
+    const recent = await res.json();
+    const ul = document.getElementById('recentPastes');
+    ul.innerHTML = '';
+    recent.forEach(p => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${p.title || '(No title)'}</strong> — <a href="/${p.key}">${p.key}</a>`;
+      ul.appendChild(li);
+    });
   }
-});
-    
-  </script>
+
+  // Load recent pastes on page load
+  loadRecent();
+
+  // If URL has a key, show the paste
+  (async () => {
+    const key = location.pathname.slice(1);
+    if (!key) return;
+
+    document.querySelector('textarea, button, #title, #visibilityToggle').style.display = 'none';
+    const res = await fetch(`${API}/${key}`);
+    if (!res.ok) return document.body.innerHTML += '<h2 style="color:red">Paste not found</h2>';
+
+    const paste = await res.json();
+    const code = document.querySelector('#view code');
+    code.textContent = paste.content;
+    document.getElementById('view').style.display = 'block';
+  })();
+</script>
+
 </body>
 </html>
-
-
