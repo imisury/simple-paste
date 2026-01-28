@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
+import { serve } from '@hono/node-server'; // <-- THIS IS REQUIRED
 import fs from 'fs/promises';
 import fsSync from 'fs'; // only for existsSync
 import path from 'path';
