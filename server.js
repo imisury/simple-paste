@@ -1,33 +1,43 @@
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { nanoid } from 'nanoid';
+import fs from 'fs/promises'; // Node's promise-based fs
 
 const app = new Hono();
-const pastes = new Map(); // key → text
+const pastes = new Map();
 
-// Serve frontend
-app.get('/', (c) => c.html(Bun ? await Bun.file('./index.html').text() : await fetch('./index.html').then(r => r.text())));
+// Load index.html once at startup (async top-level is ok in ESM with Node 14+)
+let htmlContent;
+try {
+  htmlContent = await fs.readFile('./index.html', 'utf8');
+  console.log('index.html loaded successfully');
+} catch (err) {
+  console.error('Failed to load index.html:', err);
+  htmlContent = '<h1>Error: Could not load page</h1>';
+}
 
-// Serve frontend for paste URLs too (frontend will fetch content)
-app.get('/:key', async (c) => {
+// Serve the frontend HTML
+app.get('/', (c) => c.html(htmlContent));
+
+app.get('/:key', (c) => {
   const key = c.req.param('key');
   if (pastes.has(key)) {
-    return c.html(Bun ? await Bun.file('./index.html').text() : await fetch('./index.html').then(r => r.text()));
+    return c.html(htmlContent); // frontend JS will fetch content
   }
   return c.redirect('/');
 });
 
-// API: create paste
+// Create paste
 app.post('/api', async (c) => {
   const text = await c.req.text();
-  if (!text.trim()) return c.text('Empty', 400);
+  if (!text.trim()) return c.text('Empty paste', 400);
 
   const key = nanoid(8);
   pastes.set(key, text);
   return c.text(key);
 });
 
-// API: get paste
+// Get paste content
 app.get('/api/:key', (c) => {
   const text = pastes.get(c.req.param('key'));
   return text ? c.text(text) : c.notFound();
@@ -38,4 +48,4 @@ serve({
   port: process.env.PORT || 3000
 });
 
-console.log('Server started');
+console.log('Server running on Node.js');
