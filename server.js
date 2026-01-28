@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { serve } from '@hono/node-server';
+import { createServer } from 'http';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import path from 'path';
@@ -75,6 +75,7 @@ app.get("/api/recent", (c) => {
 });
 
 // ✅ Use serve() instead of app.listen()
-const PORT = process.env.PORT || 3000;
-serve(app, { port: PORT });
-console.log(`Server running on port ${PORT}`);
+const PORT = process.env.PORT || 8080;
+createServer(app.fetch).listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
