@@ -15,12 +15,19 @@
   </style>
 </head>
 <body>
-  <h1>Imisury Paste</h1>
-  <textarea id="content" placeholder="Paste your text here..."></textarea>
-  <br>
-  <button onclick="createPaste()">Create Paste</button>
-  <div id="result"></div>
-  <pre id="view"><code></code></pre>
+
+  <div class="container">
+    <h1>Imisury Paste</h1>
+
+    <textarea id="content" placeholder="Paste your text here..."></textarea>
+    <br>
+
+    <button onclick="createPaste()">Create Paste</button>
+
+    <div id="result"></div>
+
+    <pre id="view"><code></code></pre>
+  </div>
 
   <script>
     const API = window.location.origin + '/api';
