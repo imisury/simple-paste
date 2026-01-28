@@ -87,5 +87,11 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-serve(app, { port: 3000 });
-console.log('Server running on http://localhost:3000');
+// start server (Node.js)
+serve(app, {
+  port: 3000,
+  listeningListener: (info) => {
+    console.log(`Server running on http://localhost:${info.port}`);
+  },
+});
+
