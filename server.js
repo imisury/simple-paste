@@ -8,8 +8,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = new Hono();
+
 const DATA_FILE = path.join(process.cwd(), "pastes.json");
 
+// Load HTML
 let htmlContent;
 try {
   htmlContent = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
@@ -19,13 +21,13 @@ try {
   htmlContent = '<h1>Error: Could not load page</h1>';
 }
 
-// Load pastes from file
+// Load pastes file
 let pastes = {};
 try {
-  const data = await fs.readFile(DATA_FILE, 'utf8');
-  pastes = JSON.parse(data);
-} catch (err) {
-  pastes = {}; // file doesn't exist or invalid JSON
+  const pastesRaw = await fs.readFile(DATA_FILE, 'utf8');
+  pastes = JSON.parse(pastesRaw);
+} catch {
+  pastes = {};
 }
 
 // Save helper
@@ -40,30 +42,21 @@ app.get("/style.css", async (c) => {
   return c.text(css, 200, { "Content-Type": "text/css" });
 });
 
-// Serve UI for specific paste
 app.get("/:key", (c) => {
   const { key } = c.req.param();
   if (pastes[key]) return c.html(htmlContent);
   return c.redirect("/");
 });
 
-// Create paste (JSON expected)
 app.post("/api", async (c) => {
-  const { title = "", content = "", visibility = "public" } =
-    await c.req.json();
-
+  const { title = "", content = "", visibility = "public" } = await c.req.json();
   if (!content.trim()) return c.json({ error: "Empty paste" }, 400);
-
   const key = nanoid(8);
-  const createdAt = Date.now();
-
-  pastes[key] = { title, content, visibility, createdAt };
+  pastes[key] = { title, content, visibility, createdAt: Date.now() };
   await savePastes();
-
   return c.json({ success: true, key });
 });
 
-// Get paste details
 app.get("/api/:key", (c) => {
   const { key } = c.req.param();
   const paste = pastes[key];
@@ -71,7 +64,6 @@ app.get("/api/:key", (c) => {
   return c.json(paste);
 });
 
-// Recent public pastes
 app.get("/api/recent", (c) => {
   const recent = Object.entries(pastes)
     .filter(([, p]) => p.visibility === "public")
@@ -82,5 +74,7 @@ app.get("/api/recent", (c) => {
   return c.json(recent);
 });
 
-serve(app, { port: process.env.PORT || 3000 });
-
+// ✅ Use serve() instead of app.listen()
+const PORT = process.env.PORT || 3000;
+serve(app, { port: PORT });
+console.log(`Server running on port ${PORT}`);
