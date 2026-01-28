@@ -87,4 +87,7 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-app.fire();
+import { serve } from '@hono/node-server';
+
+serve(app);
+
