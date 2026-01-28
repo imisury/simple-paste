@@ -88,5 +88,6 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-serve(app);
+serve(app, { port: 3000 }); // optional: specify port
+console.log('Server running on http://localhost:3000');
 
