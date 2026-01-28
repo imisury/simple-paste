@@ -88,7 +88,6 @@ app.get('/api/recent', (c) => {
   return c.json(recent);
 });
 
-// start server (Node.js)
 serve(app, {
   port: 3000,
   listeningListener: (info) => {
