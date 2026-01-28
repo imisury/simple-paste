@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';|
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,12 +35,12 @@ const savePastes = async () => {
 // Routes
 app.get("/", (c) => c.html(htmlContent));
 app.get("/style.css", async (c) => {
-  const css = await fs.readFile("./style.css", "utf8");
+  const css = await fs.readFile(path.join(__dirname, "style.css"), "utf8");
   return c.text(css, 200, { "Content-Type": "text/css" });
 });
 
 app.get("/:key", (c) => {
-  const { key } = c.req.param();
+  const key = c.req.param('key');
   if (pastes[key]) return c.html(htmlContent);
   return c.redirect("/");
 });
@@ -58,7 +58,7 @@ app.post("/api", async (c) => {
 });
 
 app.get("/api/:key", (c) => {
-  const { key } = c.req.param();
+  const key = c.req.param('key');
   const paste = pastes[key];
   if (!paste) return c.json({ error: "Paste not found" }, 404);
   return c.json(paste);
@@ -73,10 +73,8 @@ app.get("/api/recent", (c) => {
   return c.json(recent);
 });
 
-// --- Serve using native Node HTTP ---
+// Serve using native Node HTTP
 const PORT = process.env.PORT || 8080;
 createServer(app.fetch).listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
   console.log(`Server running on port ${PORT}`);
 });
