@@ -46,49 +46,50 @@ app.get('/style.css', async (c) => {
   });
 });
 
-// Create paste
+// Load pastes from file, or start empty
+let pastes = {};
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    pastes = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+  } catch (e) {
+    console.error('Failed to load pastes.json, starting empty', e);
+    pastes = {};
+  }
+}
+
+// Create a new paste
 app.post('/api', async (c) => {
-  const text = await c.req.text();
-  if (!text.trim()) return c.text('Empty paste', 400);
+  const body = await c.req.json();
+  const { title = '', content = '', visibility = 'public' } = body;
 
   const key = nanoid(8);
-  pastes.set(key, text);
-  return c.text(key);
+  const createdAt = Date.now();
+
+  pastes[key] = { title, content, visibility, createdAt };
+  savePastes();
+
+  return c.json({ success: true, key });
 });
 
-// Get paste content
+// Get a paste by key
 app.get('/api/:key', (c) => {
-  const text = pastes.get(c.req.param('key'));
-  return text ? c.text(text) : c.notFound();
+  const key = c.req.param('key');
+  const paste = pastes[key];
+
+  if (!paste) return c.json({ error: 'Paste not found' }, 404);
+
+  return c.json(paste);
 });
 
-serve({
-  fetch: app.fetch,
-  port: process.env.PORT || 3000
+// Get recent public pastes
+app.get('/api/recent', (c) => {
+  const recent = Object.entries(pastes)
+    .filter(([_, paste]) => paste.visibility === 'public')
+    .sort((a, b) => b[1].createdAt - a[1].createdAt)
+    .slice(0, 10)
+    .map(([key, paste]) => ({ key, title: paste.title, createdAt: paste.createdAt }));
+
+  return c.json(recent);
 });
 
-console.log('Server running on Node.js');
-
-// Example for Express + SQLite/Postgres
-app.post("/paste", async (req, res) => {
-  const { title, content, visibility } = req.body;
-  // Save title + content + visibility in DB
-  await db.query("INSERT INTO pastes (title, content, visibility) VALUES ($1, $2, $3)", [title, content, visibility]);
-  res.json({ success: true, id: newPasteId });
-});
-
-app.get("/paste/:id", async (req, res) => {
-  const paste = await db.query("SELECT * FROM pastes WHERE id = $1", [req.params.id]);
-  res.json(paste.rows[0]); // include title in response
-});
-
-
-// Example query for recent pastes
-const recentPublicPastes = await db.query("SELECT * FROM pastes WHERE visibility='public' ORDER BY created_at DESC LIMIT 10");
-
-app.get("/recent", async (req, res) => {
-  const recent = await db.query("SELECT id, title, created_at FROM pastes WHERE visibility='public' ORDER BY created_at DESC LIMIT 10");
-  res.json(recent.rows);
-});
-
-
+app.fire();
